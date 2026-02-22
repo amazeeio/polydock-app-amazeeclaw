@@ -11,7 +11,7 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "freedomtech-hosting/polydock-app-amazeeio-generic": "^0.0.80",
+        "freedomtech-hosting/polydock-app-amazeeio-generic": "^0.0.81",
         "freedomtech-hosting/polydock-amazeeai-backend-client-php": "^0.0.7"
     }
 }
