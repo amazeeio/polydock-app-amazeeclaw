@@ -138,10 +138,13 @@ trait UsesAmazeeAiBackend
                 $this->info('Multiple users found in amazeeAI backend for user email: '.$amazeeAiBackendUserEmail, $logContext);
                 $backendUser = $backendUserList[0];
                 $this->info('Using first user found in amazeeAI backend for user email: '.$amazeeAiBackendUserEmail, $logContext);
+            } elseif (count($backendUserList) === 1) {
+                $backendUser = $backendUserList[0];
+                $this->info('Using existing user found in amazeeAI backend for user email: '.$amazeeAiBackendUserEmail, $logContext);
             } else {
                 $this->info('No user found in amazeeAI backend for user email: '.$amazeeAiBackendUserEmail, $logContext);
                 $password = substr(str_shuffle('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 6);
-                $this->info('Creating new user in amazeeAI backend for user email: '.$amazeeAiBackendUserEmail, $logContext + ['password' => $password]);
+                $this->info('Creating new user in amazeeAI backend for user email: '.$amazeeAiBackendUserEmail, $logContext);
                 $backendUser = $this->amazeeAiBackendClient->createUser($amazeeAiBackendUserEmail, $password);
                 $this->info('Created new user in amazeeAI backend for user email: '.$amazeeAiBackendUserEmail, $logContext + $backendUser);
             }
@@ -179,12 +182,21 @@ trait UsesAmazeeAiBackend
 
         foreach ($requiredKeys as $key) {
             if (! isset($response[$key])) {
-                $this->error('Missing required credential key: '.$key, $logContext + $response);
+                $this->error('Missing required credential key: '.$key, $logContext);
                 throw new PolydockAppInstanceStatusFlowException('Missing required credential key: '.$key);
             }
         }
 
-        $this->info('LiteLLM credentials found via client library', $logContext + $response);
+        $backendApiTokenName = $backendCredentialName.'-backend-api';
+        $this->info('Creating Amazee AI backend API token', $logContext + ['ai_backend_token_name' => $backendApiTokenName]);
+        $backendApiTokenResponse = $this->amazeeAiBackendClient->createToken($backendApiTokenName, (int) $backendUserId);
+        if (! is_array($backendApiTokenResponse) || ! isset($backendApiTokenResponse['token'])) {
+            $this->error('Missing required credential key: token', $logContext + ['ai_backend_token_name' => $backendApiTokenName]);
+            throw new PolydockAppInstanceStatusFlowException('Missing required credential key: token');
+        }
+
+        $response['amazeeai_backend_api_token'] = $backendApiTokenResponse['token'];
+        $this->info('LiteLLM and backend API credentials created via client library', $logContext + ['ai_backend_token_name' => $backendApiTokenName]);
 
         return $response;
     }

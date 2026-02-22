@@ -80,6 +80,7 @@ trait PostCreateAppInstanceTrait
             $this->info($functionName.': Injecting AI LLM Credentials', $logContext);
             $this->addOrUpdateLagoonProjectVariable($appInstance, 'AMAZEEAI_BASE_URL', $privateAiCredentials['litellm_api_url'], 'GLOBAL');
             $this->addOrUpdateLagoonProjectVariable($appInstance, 'AMAZEEAI_API_KEY', $privateAiCredentials['litellm_token'], 'GLOBAL');
+            $this->addOrUpdateLagoonProjectVariable($appInstance, 'AMAZEEAI_BACKEND_API_TOKEN', $privateAiCredentials['amazeeai_backend_api_token'], 'GLOBAL');
             $this->info($functionName.': Done injecting AI infrastructure', $logContext);
         } catch (\Exception $e) {
             $this->error('Post Create Failed: ' . $e->getMessage(), [
