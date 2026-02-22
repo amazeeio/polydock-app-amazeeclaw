@@ -25,7 +25,7 @@ class PolydockAmazeeClawAiApp extends GenericPolydockAiApp implements HasAppInst
     use PreCreateAppInstanceTrait;
     use UsesAmazeeAiBackend;
 
-    public static string $version = '0.1.3';
+    public static string $version = '0.1.4';
 
     #[\Override]
     public static function getStoreAppFormSchema(): array

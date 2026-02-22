@@ -73,6 +73,11 @@ trait PostCreateAppInstanceTrait
             if ($amazeeClawDefaultModel === '') {
                 $amazeeClawDefaultModel = $appInstance->getKeyValue('app_config_openclaw_default_model');
             }
+            if ($amazeeClawDefaultModel === '') {
+                /** @phpstan-ignore-next-line */
+                $storeAppConfig = (array) (($appInstance->storeApp->app_config ?? null) ?: []);
+                $amazeeClawDefaultModel = (string) ($storeAppConfig['openclaw_default_model'] ?? '');
+            }
             if ($amazeeClawDefaultModel !== '') {
                 $this->addOrUpdateLagoonProjectVariable($appInstance, 'AMAZEEAI_DEFAULT_MODEL', $amazeeClawDefaultModel, 'GLOBAL');
             }
