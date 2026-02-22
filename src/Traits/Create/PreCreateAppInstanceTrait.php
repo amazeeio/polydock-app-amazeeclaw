@@ -64,8 +64,13 @@ trait PreCreateAppInstanceTrait
      */
     protected function generateUniqueProjectName(string $prefix): string
     {
-        $uniqueIdLength = 4;
-        $shortUniqueId = substr(uniqid(), 0, $uniqueIdLength);
+        $uniqueIdLengthBytes = 3; // 6 hex chars
+        try {
+            $shortUniqueId = bin2hex(random_bytes($uniqueIdLengthBytes));
+        } catch (\Exception) {
+            // Fallback preserves randomness if secure source is unavailable.
+            $shortUniqueId = substr(hash('sha256', uniqid('', true)), 0, $uniqueIdLengthBytes * 2);
+        }
 
         return strtolower(
             $prefix.'-'.
