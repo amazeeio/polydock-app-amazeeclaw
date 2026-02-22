@@ -25,7 +25,29 @@ class PolydockAmazeeClawAiApp extends GenericPolydockAiApp implements HasAppInst
     use PreCreateAppInstanceTrait;
     use UsesAmazeeAiBackend;
 
-    public static string $version = '0.1.2';
+    public static string $version = '0.1.3';
+
+    #[\Override]
+    public static function getStoreAppFormSchema(): array
+    {
+        return [
+            Forms\Components\TextInput::make('openclaw_default_model')
+                ->label('openClawDefaultModel')
+                ->placeholder('e.g. kimi-k2.5')
+                ->maxLength(255)
+                ->helperText('Default model for OpenClaw amazee.ai behavior. Used when instance value is not set.'),
+        ];
+    }
+
+    #[\Override]
+    public static function getStoreAppInfolistSchema(): array
+    {
+        return [
+            Infolists\Components\TextEntry::make('openclaw_default_model')
+                ->label('openClawDefaultModel')
+                ->placeholder('Not configured'),
+        ];
+    }
 
     #[\Override]
     public static function getAppInstanceFormSchema(): array
@@ -35,7 +57,7 @@ class PolydockAmazeeClawAiApp extends GenericPolydockAiApp implements HasAppInst
                 ->label('openClawDefaultModel')
                 ->placeholder('e.g. kimi-k2.5')
                 ->maxLength(255)
-                ->helperText('Default model for OpenClaw amazee.ai behavior.'),
+                ->helperText('Optional override for this specific instance.'),
         ];
     }
 
