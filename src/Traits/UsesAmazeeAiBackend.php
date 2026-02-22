@@ -15,13 +15,12 @@ trait UsesAmazeeAiBackend
         $this->engine = $engine;
 
         $amazeeAiBackendClientProvider = $engine->getPolydockServiceProviderSingletonInstance('PolydockServiceProviderAmazeeAiBackend');
-        $this->amazeeAiBackendClientProvider = $amazeeAiBackendClientProvider;
 
         if (! method_exists($amazeeAiBackendClientProvider, 'getAmazeeAiBackendClient')) {
             throw new PolydockAppInstanceStatusFlowException('Amazee AI backend client provider does not have getAmazeeAiBackendClient method');
         } else {
             /** @phpstan-ignore-next-line */
-            $this->amazeeAiBackendClient = $this->amazeeAiBackendClientProvider->getAmazeeAiBackendClient();
+            $this->amazeeAiBackendClient = $amazeeAiBackendClientProvider->getAmazeeAiBackendClient();
         }
 
         if (! $this->amazeeAiBackendClient) {

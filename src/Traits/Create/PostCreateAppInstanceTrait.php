@@ -65,13 +65,13 @@ trait PostCreateAppInstanceTrait
             $amazeeClawDefaultModel = '';
             if (method_exists($appInstance, 'getPolydockVariableValue')) {
                 /** @phpstan-ignore-next-line */
-                $amazeeClawDefaultModel = (string) ($appInstance->getPolydockVariableValue('instance_config_amazeeclaw_default_model') ?? '');
+                $amazeeClawDefaultModel = (string) ($appInstance->getPolydockVariableValue('instance_config_openclaw_default_model') ?? '');
             }
             if ($amazeeClawDefaultModel === '') {
-                $amazeeClawDefaultModel = $appInstance->getKeyValue('instance_config_amazeeclaw_default_model');
+                $amazeeClawDefaultModel = $appInstance->getKeyValue('instance_config_openclaw_default_model');
             }
             if ($amazeeClawDefaultModel !== '') {
-                $this->addOrUpdateLagoonProjectVariable($appInstance, 'AMAZEEAI_DEFAULT_MODEL', $amazeeClawDefaultModel, 'GLOBAL');
+                $this->addOrUpdateLagoonProjectVariable($appInstance, 'MAZ_OPENCLAW_DEFAULT_MODEL', $amazeeClawDefaultModel, 'GLOBAL');
             }
 
             sleep(2);
