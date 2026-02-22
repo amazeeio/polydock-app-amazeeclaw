@@ -16,18 +16,20 @@ It is intentionally minimal and built on top of the generic AI app so shared lif
 
 - Adds app instance field `openclaw_default_model`
 - Injects `MAZ_OPENCLAW_DEFAULT_MODEL` into Lagoon project variables
-- Uses LiteLLM token-only credential creation via
+- Creates/reuses an amazee.ai team (`gpt-<lagoon-project-name>`) using the app instance user email
+- Uses team-owned LiteLLM token creation via
   `Client::createPrivateAIKeyToken()` from `freedomtech-hosting/polydock-amazeeai-backend-client-php`
 - Injects:
   - `AMAZEEAI_BASE_URL`
   - `AMAZEEAI_API_KEY`
+  - `AMAZEE_AI_TEAM_ID`
 
 ## Requirements
 
 - PHP/Composer environment compatible with Polydock packages
 - Dependency versions (see `composer.json`), especially:
   - `freedomtech-hosting/polydock-app-amazeeio-generic`
-  - `freedomtech-hosting/polydock-amazeeai-backend-client-php ^0.0.7`
+  - `freedomtech-hosting/polydock-amazeeai-backend-client-php ^0.1`
 
 ## Development
 

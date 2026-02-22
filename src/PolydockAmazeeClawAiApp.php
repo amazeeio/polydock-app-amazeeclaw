@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Amazeeio\PolydockAppAmazeeclaw;
 
 use Amazeeio\PolydockAppAmazeeclaw\Traits\Create\PostCreateAppInstanceTrait;
+use Amazeeio\PolydockAppAmazeeclaw\Traits\Create\PreCreateAppInstanceTrait;
 use Amazeeio\PolydockAppAmazeeclaw\Traits\UsesAmazeeAiBackend;
 use Filament\Forms;
 use Filament\Infolists;
@@ -21,9 +22,10 @@ use FreedomtechHosting\PolydockAppAmazeeioGeneric\PolydockAiApp as GenericPolydo
 class PolydockAmazeeClawAiApp extends GenericPolydockAiApp implements HasAppInstanceFormFields, HasStoreAppFormFields
 {
     use PostCreateAppInstanceTrait;
+    use PreCreateAppInstanceTrait;
     use UsesAmazeeAiBackend;
 
-    public static string $version = '0.0.1';
+    public static string $version = '0.1.1';
 
     #[\Override]
     public static function getAppInstanceFormSchema(): array

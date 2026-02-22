@@ -9,6 +9,57 @@ use FreedomtechHosting\PolydockApp\PolydockAppInstanceStatusFlowException;
 
 trait UsesAmazeeAiBackend
 {
+    /**
+     * @return array<string, mixed>
+     */
+    protected function getOrCreateTeamForAppInstance(PolydockAppInstanceInterface $appInstance, array $logContext = []): array
+    {
+        $projectName = (string) $appInstance->getKeyValue('lagoon-project-name');
+        $teamName = sprintf('amazeeclaw-%s', $projectName);
+        $adminEmail = (string) $appInstance->getKeyValue('user-email');
+
+        if ($adminEmail === '') {
+            throw new PolydockAppInstanceStatusFlowException('Polydock user-email is required to create amazee.ai team');
+        }
+
+        $logContext['ai_backend_team_name'] = $teamName;
+        $logContext['ai_backend_team_admin_email'] = $adminEmail;
+
+        $existingTeams = $this->amazeeAiBackendClient->listTeams();
+        foreach ($existingTeams as $team) {
+            if (! is_array($team)) {
+                continue;
+            }
+
+            $existingTeamId = isset($team['id']) ? (string) $team['id'] : '';
+            $existingTeamName = isset($team['name']) ? strtolower((string) $team['name']) : '';
+            $existingTeamAdminEmail = isset($team['admin_email']) ? strtolower((string) $team['admin_email']) : '';
+
+            if (
+                $existingTeamId !== ''
+                && ($existingTeamName === strtolower($teamName) || $existingTeamAdminEmail === strtolower($adminEmail))
+            ) {
+                $this->info('Using existing amazeeAI backend team', $logContext + ['ai_backend_team_id' => $existingTeamId]);
+
+                return $team;
+            }
+        }
+
+        try {
+            $this->info('Creating amazeeAI backend team', $logContext);
+            $team = $this->amazeeAiBackendClient->createTeam($teamName, $adminEmail);
+            $this->info('Created amazeeAI backend team', $logContext + ['ai_backend_team_id' => $team['id'] ?? null]);
+
+            return $team;
+        } catch (HttpException $e) {
+            $this->error('Error creating amazeeAI backend team', $logContext + [
+                'status_code' => $e->getStatusCode(),
+                'response' => $e->getResponse(),
+            ]);
+            throw new PolydockAppInstanceStatusFlowException('Failed to create amazeeAI backend team: '.$e->getMessage());
+        }
+    }
+
     public function setAmazeeAiBackendClientFromAppInstance(PolydockAppInstanceInterface $appInstance): void
     {
         $engine = $appInstance->getEngine();
@@ -120,9 +171,9 @@ trait UsesAmazeeAiBackend
             throw new PolydockAppInstanceStatusFlowException('Amazee AI backend region is required to be set in the app instance');
         }
 
-        $amazeeAiBackendUserEmail = $appInstance->getKeyValue('amazee-ai-backend-user-email');
-        if (! $amazeeAiBackendUserEmail) {
-            $amazeeAiBackendUserEmail = $projectName.'@autogen.null';
+        $amazeeAiBackendUserEmail = (string) $appInstance->getKeyValue('user-email');
+        if ($amazeeAiBackendUserEmail === '') {
+            throw new PolydockAppInstanceStatusFlowException('Polydock user-email is required to create amazee.ai backend user');
         }
 
         $logContext['ai_backend_region'] = $region;
@@ -166,9 +217,22 @@ trait UsesAmazeeAiBackend
         $logContext['ai_backend_user_id'] = $backendUserId;
         $logContext['ai_backend_credential_name'] = $backendCredentialName;
 
+        $team = $this->getOrCreateTeamForAppInstance($appInstance, $logContext);
+        if (! is_array($team) || ! isset($team['id'])) {
+            throw new PolydockAppInstanceStatusFlowException('Failed to find or create amazeeAI backend team');
+        }
+
+        $teamId = (int) $team['id'];
+        $logContext['ai_backend_team_id'] = $teamId;
+
+        $appInstance->storeKeyValue('amazee-ai-team-id', (string) $teamId);
+        if (isset($team['name'])) {
+            $appInstance->storeKeyValue('amazee-ai-team-name', (string) $team['name']);
+        }
+
         $this->info('Getting LiteLLM-only credentials from amazeeAI backend via client library', $logContext);
 
-        $response = $this->amazeeAiBackendClient->createPrivateAIKeyToken((int) $region, $backendCredentialName, (int) $backendUserId);
+        $response = $this->amazeeAiBackendClient->createPrivateAIKeyToken((int) $region, $backendCredentialName, 0, $teamId);
 
         if (! $response || ! is_array($response)) {
             $this->error('No AI credentials found', $logContext);
@@ -186,6 +250,8 @@ trait UsesAmazeeAiBackend
                 throw new PolydockAppInstanceStatusFlowException('Missing required credential key: '.$key);
             }
         }
+
+        $response['amazeeai_team_id'] = $teamId;
 
         $backendApiTokenName = $backendCredentialName.'-backend-api';
         $this->info('Creating Amazee AI backend API token', $logContext + ['ai_backend_token_name' => $backendApiTokenName]);
