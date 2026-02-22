@@ -1,0 +1,18 @@
+{
+    "name": "amazeeio/polydock-app-amazeeclaw",
+    "description": "Polydock App - AmazeeClaw AI",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Amazeeio\\PolydockAppAmazeeclaw\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "freedomtech-hosting/polydock-app": "^0.0.30",
+        "freedomtech-hosting/ft-lagoon-php": "^0.0.11",
+        "freedomtech-hosting/polydock-amazeeai-backend-client-php": "^0.0.7"
+    }
+}
