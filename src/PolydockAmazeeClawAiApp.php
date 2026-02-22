@@ -31,9 +31,9 @@ class PolydockAmazeeClawAiApp extends GenericPolydockAiApp implements HasAppInst
         return [
             Forms\Components\TextInput::make('openclaw_default_model')
                 ->label('openClawDefaultModel')
-                ->placeholder('e.g. anthropic/claude-3-5-sonnet')
+                ->placeholder('e.g. kimi-k2.5')
                 ->maxLength(255)
-                ->helperText('Default model for OpenClaw MAZ behavior.'),
+                ->helperText('Default model for OpenClaw amazee.ai behavior.'),
         ];
     }
 
