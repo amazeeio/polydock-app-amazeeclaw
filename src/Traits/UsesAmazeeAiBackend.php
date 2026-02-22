@@ -14,13 +14,13 @@ trait UsesAmazeeAiBackend
      */
     protected function getOrCreateTeamForAppInstance(PolydockAppInstanceInterface $appInstance, array $logContext = []): array
     {
-        $projectName = (string) $appInstance->getKeyValue('lagoon-project-name');
-        $teamName = sprintf('amazeeclaw-%s', $projectName);
         $adminEmail = (string) $appInstance->getKeyValue('user-email');
 
         if ($adminEmail === '') {
             throw new PolydockAppInstanceStatusFlowException('Polydock user-email is required to create amazee.ai team');
         }
+
+        $teamName = strtolower($adminEmail);
 
         $logContext['ai_backend_team_name'] = $teamName;
         $logContext['ai_backend_team_admin_email'] = $adminEmail;
@@ -228,6 +228,28 @@ trait UsesAmazeeAiBackend
         $appInstance->storeKeyValue('amazee-ai-team-id', (string) $teamId);
         if (isset($team['name'])) {
             $appInstance->storeKeyValue('amazee-ai-team-name', (string) $team['name']);
+        }
+
+        $existingUserTeamId = isset($backendUser['team_id']) ? (int) $backendUser['team_id'] : 0;
+        if ($existingUserTeamId > 0 && $existingUserTeamId !== $teamId) {
+            $this->error('User already belongs to a different amazeeAI backend team', $logContext + [
+                'existing_ai_backend_team_id' => $existingUserTeamId,
+            ]);
+            throw new PolydockAppInstanceStatusFlowException('User already belongs to a different amazeeAI backend team');
+        }
+
+        if ($existingUserTeamId !== $teamId) {
+            try {
+                $this->info('Adding user to amazeeAI backend team', $logContext);
+                $this->amazeeAiBackendClient->addUserToTeam((int) $backendUserId, $teamId);
+                $this->info('Added user to amazeeAI backend team', $logContext);
+            } catch (HttpException $e) {
+                $this->error('Error adding user to amazeeAI backend team', $logContext + [
+                    'status_code' => $e->getStatusCode(),
+                    'response' => $e->getResponse(),
+                ]);
+                throw new PolydockAppInstanceStatusFlowException('Failed to add user to amazeeAI backend team: '.$e->getMessage());
+            }
         }
 
         $this->info('Getting LiteLLM-only credentials from amazeeAI backend via client library', $logContext);
