@@ -165,7 +165,6 @@ trait UsesAmazeeAiBackend
             throw new PolydockAppInstanceStatusFlowException('Amazee AI backend is not healthy');
         }
 
-        $projectName = $appInstance->getKeyValue('lagoon-project-name');
         $region = $appInstance->getKeyValue('amazee-ai-backend-region-id');
         if (! $region) {
             throw new PolydockAppInstanceStatusFlowException('Amazee AI backend region is required to be set in the app instance');
@@ -212,10 +211,8 @@ trait UsesAmazeeAiBackend
         }
 
         $backendUserId = $backendUser['id'];
-        $backendCredentialName = strtolower(trim((string) preg_replace('/[^A-Za-z0-9-]+/', '-', $projectName))).'-proj-creds';
 
         $logContext['ai_backend_user_id'] = $backendUserId;
-        $logContext['ai_backend_credential_name'] = $backendCredentialName;
 
         $team = $this->getOrCreateTeamForAppInstance($appInstance, $logContext);
         if (! is_array($team) || ! isset($team['id'])) {
@@ -224,6 +221,8 @@ trait UsesAmazeeAiBackend
 
         $teamId = (int) $team['id'];
         $logContext['ai_backend_team_id'] = $teamId;
+        $backendCredentialName = $this->buildSharedAmazeeClawCredentialName($teamId, (int) $region);
+        $logContext['ai_backend_credential_name'] = $backendCredentialName;
 
         $appInstance->storeKeyValue('amazee-ai-team-id', (string) $teamId);
         if (isset($team['name'])) {
@@ -254,7 +253,17 @@ trait UsesAmazeeAiBackend
 
         $this->info('Getting LiteLLM-only credentials from amazeeAI backend via client library', $logContext);
 
-        $response = $this->amazeeAiBackendClient->createPrivateAIKeyToken((int) $region, $backendCredentialName, 0, $teamId);
+        $response = $this->findReusableAmazeeClawCredential($backendCredentialName, (int) $region, $logContext);
+        if ($response !== null) {
+            $this->info('Reusing existing amazeeAI backend key token', $logContext + [
+                'ai_backend_credential_name' => $backendCredentialName,
+            ]);
+        } else {
+            $this->info('Creating amazeeAI backend key token', $logContext + [
+                'ai_backend_credential_name' => $backendCredentialName,
+            ]);
+            $response = $this->amazeeAiBackendClient->createPrivateAIKeyToken((int) $region, $backendCredentialName, 0, $teamId);
+        }
 
         if (! $response || ! is_array($response)) {
             $this->error('No AI credentials found', $logContext);
@@ -287,5 +296,82 @@ trait UsesAmazeeAiBackend
         $this->info('LiteLLM and backend API credentials created via client library', $logContext + ['ai_backend_token_name' => $backendApiTokenName]);
 
         return $response;
+    }
+
+    private function buildSharedAmazeeClawCredentialName(int $teamId, int $regionId): string
+    {
+        return 'amazeeclaw-team-'.$teamId.'-region-'.$regionId;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function findReusableAmazeeClawCredential(string $credentialName, int $regionId, array $logContext = []): ?array
+    {
+        try {
+            $allKeys = $this->amazeeAiBackendClient->listPrivateAIKeys();
+        } catch (\Throwable $e) {
+            $this->warning('Unable to list existing amazeeAI backend keys, will create a new one', $logContext + [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        foreach ($allKeys as $key) {
+            if (! is_array($key)) {
+                continue;
+            }
+
+            $name = isset($key['name']) ? (string) $key['name'] : '';
+            if ($name !== $credentialName) {
+                continue;
+            }
+
+            if ($this->doesKeyMatchRegion($key, $regionId) !== true) {
+                continue;
+            }
+
+            $token = isset($key['litellm_token']) ? (string) $key['litellm_token'] : '';
+            $apiUrl = isset($key['litellm_api_url']) ? (string) $key['litellm_api_url'] : '';
+            if ($token === '' || $apiUrl === '') {
+                $this->warning('Found matching amazeeAI key without complete token payload; creating a new one', $logContext + [
+                    'ai_backend_credential_name' => $credentialName,
+                ]);
+
+                return null;
+            }
+
+            return [
+                'litellm_token' => $token,
+                'litellm_api_url' => $apiUrl,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $key
+     */
+    private function doesKeyMatchRegion(array $key, int $regionId): bool
+    {
+        if (isset($key['region_id']) && (int) $key['region_id'] === $regionId) {
+            return true;
+        }
+
+        if (isset($key['region'])) {
+            $regionValue = (string) $key['region'];
+            if (is_numeric($regionValue) && (int) $regionValue === $regionId) {
+                return true;
+            }
+
+            // Some API responses expose region name/label, not ID.
+            // In that case, credential-name matching is already strict.
+            return true;
+        }
+
+        // If region metadata is absent, trust the deterministic credential name.
+        return true;
     }
 }
