@@ -29,8 +29,6 @@ trait PostCreateAppInstanceTrait
             $validateLagoonProjectId
         );
 
-        $this->setAmazeeAiBackendClientFromAppInstance($appInstance);
-
         $projectName = $appInstance->getKeyValue('lagoon-project-name');
 
         $this->info($functionName.': starting for project: '.$projectName, $logContext);
@@ -82,17 +80,7 @@ trait PostCreateAppInstanceTrait
                 $this->addOrUpdateLagoonProjectVariable($appInstance, 'AMAZEEAI_DEFAULT_MODEL', $amazeeClawDefaultModel, 'GLOBAL');
             }
 
-            sleep(2);
-            $privateAiCredentials = $this->getLiteLlmCredentialsFromBackend($appInstance);
-
-            $this->info($functionName.': Injecting AI LLM Credentials', $logContext);
-            $this->addOrUpdateLagoonProjectVariable($appInstance, 'AMAZEEAI_BASE_URL', $privateAiCredentials['litellm_api_url'], 'GLOBAL');
-            $this->addOrUpdateLagoonProjectVariable($appInstance, 'AMAZEEAI_API_KEY', $privateAiCredentials['litellm_token'], 'GLOBAL');
-            $this->addOrUpdateLagoonProjectVariable($appInstance, 'AMAZEEAI_BACKEND_API_TOKEN', $privateAiCredentials['amazeeai_backend_api_token'], 'GLOBAL');
-            if (isset($privateAiCredentials['amazeeai_team_id'])) {
-                $this->addOrUpdateLagoonProjectVariable($appInstance, 'AMAZEE_AI_TEAM_ID', (string) $privateAiCredentials['amazeeai_team_id'], 'GLOBAL');
-            }
-            $this->info($functionName.': Done injecting AI infrastructure', $logContext);
+            // AI credentials are user/team-scoped and are injected at claim-time.
         } catch (\Exception $e) {
             $this->error('Post Create Failed: ' . $e->getMessage(), [
                 'exception_class' => get_class($e),

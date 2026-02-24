@@ -298,6 +298,83 @@ trait UsesAmazeeAiBackend
         return $response;
     }
 
+    /**
+     * @return array<string, string> Env vars safe to inline into claim script command
+     */
+    protected function provisionAndInjectAmazeeAiCredentialsForClaim(PolydockAppInstanceInterface $appInstance, array $logContext = []): array
+    {
+        $functionName = __FUNCTION__;
+        $logContext = $logContext + $this->getLogContext($functionName);
+
+        $this->setAmazeeAiBackendClientFromAppInstance($appInstance);
+        $privateAiCredentials = $this->getLiteLlmCredentialsFromBackend($appInstance);
+
+        $claimEnvVars = [
+            'AMAZEEAI_BASE_URL' => (string) $privateAiCredentials['litellm_api_url'],
+            'AMAZEEAI_API_KEY' => (string) $privateAiCredentials['litellm_token'],
+            'AMAZEEAI_BACKEND_API_TOKEN' => (string) $privateAiCredentials['amazeeai_backend_api_token'],
+        ];
+        $defaultModel = $this->resolveAmazeeAiDefaultModelFromInstanceOrApp($appInstance);
+        if ($defaultModel !== '') {
+            $claimEnvVars['AMAZEEAI_DEFAULT_MODEL'] = $defaultModel;
+        }
+
+        $this->info($functionName.': Injecting AI LLM Credentials', $logContext);
+        foreach ($claimEnvVars as $variableName => $variableValue) {
+            $this->addOrUpdateLagoonProjectVariable($appInstance, $variableName, $variableValue, 'GLOBAL');
+        }
+        $this->info($functionName.': Done injecting AI infrastructure', $logContext);
+
+        return $claimEnvVars;
+    }
+
+    protected function resolveAmazeeAiDefaultModelFromInstanceOrApp(PolydockAppInstanceInterface $appInstance): string
+    {
+        $defaultModel = '';
+        if (method_exists($appInstance, 'getPolydockVariableValue')) {
+            /** @phpstan-ignore-next-line */
+            $defaultModel = (string) ($appInstance->getPolydockVariableValue('instance_config_openclaw_default_model') ?? '');
+        }
+        if ($defaultModel === '') {
+            $defaultModel = (string) $appInstance->getKeyValue('instance_config_openclaw_default_model');
+        }
+        if ($defaultModel === '') {
+            $defaultModel = (string) $appInstance->getKeyValue('app_config_openclaw_default_model');
+        }
+        if ($defaultModel === '') {
+            /** @phpstan-ignore-next-line */
+            $storeAppConfig = (array) (($appInstance->storeApp->app_config ?? null) ?: []);
+            $defaultModel = (string) ($storeAppConfig['openclaw_default_model'] ?? '');
+        }
+
+        return $defaultModel;
+    }
+
+    /**
+     * @param  array<string, string>  $environmentVariables
+     */
+    protected function buildClaimScriptWithInlineEnvironmentVariables(string $claimScript, array $environmentVariables): string
+    {
+        if ($claimScript === '' || count($environmentVariables) === 0) {
+            return $claimScript;
+        }
+
+        $inlineVariables = [];
+        foreach ($environmentVariables as $variableName => $variableValue) {
+            if (! preg_match('/^[A-Z0-9_]+$/', $variableName)) {
+                continue;
+            }
+
+            $inlineVariables[] = $variableName.'='.escapeshellarg($variableValue);
+        }
+
+        if (count($inlineVariables) === 0) {
+            return $claimScript;
+        }
+
+        return 'env '.implode(' ', $inlineVariables).' '.$claimScript;
+    }
+
     private function buildSharedAmazeeClawCredentialName(int $teamId, int $regionId): string
     {
         return 'amazeeclaw-team-'.$teamId.'-region-'.$regionId;
