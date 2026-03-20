@@ -7,21 +7,14 @@ use FreedomtechHosting\PolydockApp\PolydockAppInstanceInterface;
 trait UsesAmazeeAiBackend
 {
     /**
-     * Hook called when an app instance is being registered.
-     */
-    public function registerAppInstance(PolydockAppInstanceInterface $appInstance, array $data = []): void
-    {
-        $this->info('registerAppInstance hook: extracting AI credentials', $this->getLogContext(__FUNCTION__));
-        $this->extractAndStoreAiCredentialsFromHookData($appInstance, $data);
-    }
-
-    /**
      * Hook called when an app instance is being created.
      */
-    public function createAppInstance(PolydockAppInstanceInterface $appInstance, array $data = []): void
+    public function createAppInstance(PolydockAppInstanceInterface $appInstance, array $data = []): PolydockAppInstanceInterface
     {
         $this->info('createAppInstance hook: extracting AI credentials', $this->getLogContext(__FUNCTION__));
         $this->extractAndStoreAiCredentialsFromHookData($appInstance, $data);
+
+        return $appInstance;
     }
 
     /**
@@ -30,7 +23,7 @@ trait UsesAmazeeAiBackend
     protected function extractAndStoreAiCredentialsFromHookData(PolydockAppInstanceInterface $appInstance, array $data): void
     {
         $secret = $appInstance->getKeyValue('secret') ?? [];
-        if (! is_array($secret)) {
+        if (! \is_array($secret)) {
             $secret = [];
         }
 
@@ -55,12 +48,13 @@ trait UsesAmazeeAiBackend
         }
 
         // Support nested structures if provided
-        if (isset($data['AI']) && is_array($data['AI'])) {
-            $secret['AI'] = array_merge($secret['AI'] ?? [], $data['AI']);
+        if (isset($data['ai']) && \is_array($data['ai'])) {
+            $secret['ai'] = [...($secret['ai'] ?? []), ...$data['ai']];
             $changed = true;
         }
-        if (isset($data['vectorDB']) && is_array($data['vectorDB'])) {
-            $secret['vectorDB'] = array_merge($secret['vectorDB'] ?? [], $data['vectorDB']);
+
+        if (isset($data['vector']) && \is_array($data['vector'])) {
+            $secret['vector'] = [...($secret['vector'] ?? []), ...$data['vector']];
             $changed = true;
         }
 
@@ -89,37 +83,38 @@ trait UsesAmazeeAiBackend
         $claimEnvVars = [];
         $secret = $appInstance->getKeyValue('secret');
 
-        if (! is_array($secret) || empty($secret)) {
-            $this->warning($functionName.': No manual AI credentials found in secret', $logContext);
+        if (! \is_array($secret) || empty($secret)) {
+            $this->warning("{$functionName}: No manual AI credentials found in secret", $logContext);
 
             return [];
         }
 
-        $this->info($functionName.': Using manual AI credentials from secret', $logContext);
+        $this->info("{$functionName}: Using manual AI credentials from secret", $logContext);
 
         // Map known keys to expected environment variables
-        // Support both flat structure and nested AI/vectorDB structure
+        // Support both flat structure and nested ai/vector db structure
         $mapping = [
             // AI / LLM
-            'AI.api_key' => 'AMAZEEAI_API_KEY',
+            'ai.api_key' => 'AMAZEEAI_API_KEY',
+            'ai.llm_key' => 'AMAZEEAI_API_KEY',
             'llm_key' => 'AMAZEEAI_API_KEY', // legacy
-            'AI.llm_url' => 'AMAZEEAI_BASE_URL',
+            'ai.llm_url' => 'AMAZEEAI_BASE_URL',
             'llm_url' => 'AMAZEEAI_BASE_URL', // legacy
-            'AI.backend_token' => 'AMAZEEAI_BACKEND_API_TOKEN',
+            'ai.backend_token' => 'AMAZEEAI_BACKEND_API_TOKEN',
             'backend_token' => 'AMAZEEAI_BACKEND_API_TOKEN', // legacy
-            'AI.team_id' => 'AMAZEE_AI_TEAM_ID',
+            'ai.team_id' => 'AMAZEE_AI_TEAM_ID',
             'team_id' => 'AMAZEE_AI_TEAM_ID', // legacy
 
             // Vector DB
-            'vectorDB.db_host' => 'AMAZEEAI_VECTOR_DB_HOST',
+            'vector.db_host' => 'AMAZEEAI_VECTOR_DB_HOST',
             'vector_db_host' => 'AMAZEEAI_VECTOR_DB_HOST', // legacy
-            'vectorDB.db_port' => 'AMAZEEAI_VECTOR_DB_PORT',
+            'vector.db_port' => 'AMAZEEAI_VECTOR_DB_PORT',
             'vector_db_port' => 'AMAZEEAI_VECTOR_DB_PORT', // legacy
-            'vectorDB.db_pass' => 'AMAZEEAI_VECTOR_DB_PASS',
+            'vector.db_pass' => 'AMAZEEAI_VECTOR_DB_PASS',
             'vector_db_pass' => 'AMAZEEAI_VECTOR_DB_PASS', // legacy
-            'vectorDB.db_user' => 'AMAZEEAI_VECTOR_DB_USER',
+            'vector.db_user' => 'AMAZEEAI_VECTOR_DB_USER',
             'vector_db_user' => 'AMAZEEAI_VECTOR_DB_USER', // legacy
-            'vectorDB.db_name' => 'AMAZEEAI_VECTOR_DB_NAME',
+            'vector.db_name' => 'AMAZEEAI_VECTOR_DB_NAME',
             'vector_db_name' => 'AMAZEEAI_VECTOR_DB_NAME', // legacy
         ];
 
@@ -133,7 +128,7 @@ trait UsesAmazeeAiBackend
         // Also inject everything from secret as uppercase env vars if not already mapped
         // We only do this for top-level scalar values to avoid messy env vars from nested objects
         foreach ($secret as $key => $value) {
-            if (is_scalar($value)) {
+            if (\is_scalar($value)) {
                 $envVar = strtoupper((string) $key);
                 if (! isset($claimEnvVars[$envVar])) {
                     $claimEnvVars[$envVar] = (string) $value;
@@ -146,11 +141,11 @@ trait UsesAmazeeAiBackend
             $claimEnvVars['AMAZEEAI_DEFAULT_MODEL'] = $defaultModel;
         }
 
-        $this->info($functionName.': Injecting Manual AI LLM Credentials', $logContext);
+        $this->info("{$functionName}: Injecting Manual AI LLM Credentials", $logContext);
         foreach ($claimEnvVars as $variableName => $variableValue) {
             $this->addOrUpdateLagoonProjectVariable($appInstance, $variableName, $variableValue, 'GLOBAL');
         }
-        $this->info($functionName.': Done injecting manual AI infrastructure', $logContext);
+        $this->info("{$functionName}: Done injecting manual AI infrastructure", $logContext);
 
         return $claimEnvVars;
     }
@@ -165,7 +160,7 @@ trait UsesAmazeeAiBackend
         }
 
         foreach (explode('.', $path) as $segment) {
-            if (! is_array($data) || ! array_key_exists($segment, $data)) {
+            if (! \is_array($data) || ! \array_key_exists($segment, $data)) {
                 return null;
             }
 
@@ -202,7 +197,7 @@ trait UsesAmazeeAiBackend
      */
     protected function buildClaimScriptWithInlineEnvironmentVariables(string $claimScript, array $environmentVariables): string
     {
-        if ($claimScript === '' || count($environmentVariables) === 0) {
+        if ($claimScript === '' || \count($environmentVariables) === 0) {
             return $claimScript;
         }
 
@@ -212,7 +207,7 @@ trait UsesAmazeeAiBackend
                 continue;
             }
 
-            $inlineVariables[] = $variableName.'='.escapeshellarg($variableValue);
+            $inlineVariables[] = "{$variableName}=".escapeshellarg($variableValue);
         }
 
         if (count($inlineVariables) === 0) {

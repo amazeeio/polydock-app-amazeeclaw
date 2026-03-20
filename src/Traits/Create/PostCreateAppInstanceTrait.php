@@ -16,7 +16,7 @@ trait PostCreateAppInstanceTrait
         $validateLagoonProjectName = true;
         $validateLagoonProjectId = true;
 
-        $this->info($functionName.': starting', $logContext);
+        $this->info("{$functionName}: starting", $logContext);
 
         $this->validateAppInstanceStatusIsExpectedAndConfigureLagoonClientAndVerifyLagoonValues(
             $appInstance,
@@ -30,7 +30,7 @@ trait PostCreateAppInstanceTrait
 
         $projectName = $appInstance->getKeyValue('lagoon-project-name');
 
-        $this->info($functionName.': starting for project: '.$projectName, $logContext);
+        $this->info("{$functionName}: starting for project: {$projectName}", $logContext);
         $appInstance->setStatus(
             PolydockAppInstanceStatus::POST_CREATE_RUNNING,
             PolydockAppInstanceStatus::POST_CREATE_RUNNING->getStatusMessage()
@@ -43,7 +43,7 @@ trait PostCreateAppInstanceTrait
             );
 
             if (isset($addGroupToProjectResult['error'])) {
-                $errorMessage = is_array($addGroupToProjectResult['error'])
+                $errorMessage = \is_array($addGroupToProjectResult['error'])
                     ? ($addGroupToProjectResult['error'][0]['message'] ?? json_encode($addGroupToProjectResult['error']))
                     : $addGroupToProjectResult['error'];
                 $this->error($errorMessage);
@@ -82,7 +82,7 @@ trait PostCreateAppInstanceTrait
             // AI credentials are user/team-scoped and are injected at claim-time.
         } catch (\Exception $e) {
             $this->error('Post Create Failed: '.$e->getMessage(), [
-                'exception_class' => get_class($e),
+                'exception_class' => \get_class($e),
                 'exception_trace' => $e->getTraceAsString(),
             ]);
 
@@ -91,7 +91,7 @@ trait PostCreateAppInstanceTrait
             return $appInstance;
         }
 
-        $this->info($functionName.': completed', $logContext);
+        $this->info("{$functionName}: completed", $logContext);
         $appInstance->setStatus(PolydockAppInstanceStatus::POST_CREATE_COMPLETED, 'Post-create completed')->save();
 
         return $appInstance;
