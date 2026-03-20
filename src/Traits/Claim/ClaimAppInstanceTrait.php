@@ -58,7 +58,7 @@ trait ClaimAppInstanceTrait
             $this->addOrUpdateLagoonProjectVariable($appInstance, 'POLYDOCK_CLAIMED_AT', date('Y-m-d H:i:s'), 'GLOBAL');
 
             // Provision/reuse credentials for the assigned user/team and inject into Lagoon.
-            $claimEnvironmentVariables = $this->provisionAndInjectAmazeeAiCredentialsForClaim($appInstance, $logContext);
+            $claimEnvironmentVariables = $this->provisionAndInjectManualAmazeeAiCredentials($appInstance, $logContext);
 
             if (! empty($claimScript)) {
                 $this->info('Claim script', $logContext);

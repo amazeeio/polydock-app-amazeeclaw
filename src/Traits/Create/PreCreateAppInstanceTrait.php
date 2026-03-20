@@ -31,7 +31,7 @@ trait PreCreateAppInstanceTrait
         );
 
         if ($this->getRequiresAiInfrastructure()) {
-            $this->setAmazeeAiBackendClientFromAppInstance($appInstance);
+            $this->provisionAndInjectManualAmazeeAiCredentials($appInstance, $logContext);
         }
 
         $projectName = $appInstance->getKeyValue('lagoon-project-name');

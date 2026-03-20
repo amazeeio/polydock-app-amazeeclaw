@@ -4,7 +4,6 @@ namespace Amazeeio\PolydockAppAmazeeclaw\Traits\Create;
 
 use FreedomtechHosting\PolydockApp\Enums\PolydockAppInstanceStatus;
 use FreedomtechHosting\PolydockApp\PolydockAppInstanceInterface;
-use FreedomtechHosting\PolydockApp\PolydockAppInstanceStatusFlowException;
 
 trait PostCreateAppInstanceTrait
 {
@@ -82,12 +81,12 @@ trait PostCreateAppInstanceTrait
 
             // AI credentials are user/team-scoped and are injected at claim-time.
         } catch (\Exception $e) {
-            $this->error('Post Create Failed: ' . $e->getMessage(), [
+            $this->error('Post Create Failed: '.$e->getMessage(), [
                 'exception_class' => get_class($e),
                 'exception_trace' => $e->getTraceAsString(),
             ]);
 
-            $appInstance->setStatus(PolydockAppInstanceStatus::POST_CREATE_FAILED, 'An exception occured: ' . $e->getMessage())->save();
+            $appInstance->setStatus(PolydockAppInstanceStatus::POST_CREATE_FAILED, 'An exception occured: '.$e->getMessage())->save();
 
             return $appInstance;
         }
