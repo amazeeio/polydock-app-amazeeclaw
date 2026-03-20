@@ -86,7 +86,7 @@ trait PostCreateAppInstanceTrait
                 'exception_trace' => $e->getTraceAsString(),
             ]);
 
-            $appInstance->setStatus(PolydockAppInstanceStatus::POST_CREATE_FAILED, 'An exception occured: '.$e->getMessage())->save();
+            $appInstance->setStatus(PolydockAppInstanceStatus::POST_CREATE_FAILED, 'An exception occurred: '.$e->getMessage())->save();
 
             return $appInstance;
         }
