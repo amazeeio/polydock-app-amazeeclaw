@@ -18,7 +18,7 @@ trait ClaimAppInstanceTrait
         $validateLagoonProjectName = true;
         $validateLagoonProjectId = true;
 
-        $this->info($functionName.': starting', $logContext);
+        $this->info("{$functionName}: starting", $logContext);
 
         $this->validateAppInstanceStatusIsExpectedAndConfigureLagoonClientAndVerifyLagoonValues(
             $appInstance,
@@ -32,12 +32,12 @@ trait ClaimAppInstanceTrait
 
         $projectName = $appInstance->getKeyValue('lagoon-project-name');
         $deployEnvironment = $appInstance->getKeyValue('lagoon-deploy-branch');
-        $logContext = $logContext + [
+        $logContext += [
             'projectName' => $projectName,
             'deployEnvironment' => $deployEnvironment,
         ];
 
-        $this->info($functionName.': starting claim of project: '.$projectName, $logContext);
+        $this->info("{$functionName}: starting claim of project: {$projectName}", $logContext);
         $appInstance->setStatus(
             PolydockAppInstanceStatus::POLYDOCK_CLAIM_RUNNING,
             PolydockAppInstanceStatus::POLYDOCK_CLAIM_RUNNING->getStatusMessage()
@@ -47,7 +47,7 @@ trait ClaimAppInstanceTrait
         $claimScriptService = $appInstance->getKeyValue('lagoon-claim-script-service') ?? 'openclaw-gateway';
         $claimScriptContainer = $appInstance->getKeyValue('lagoon-claim-script-container') ?? 'node';
 
-        $logContext = $logContext + [
+        $logContext += [
             'claimScript' => $claimScript,
             'claimScriptService' => $claimScriptService,
             'claimScriptContainer' => $claimScriptContainer,
@@ -58,7 +58,7 @@ trait ClaimAppInstanceTrait
             $this->addOrUpdateLagoonProjectVariable($appInstance, 'POLYDOCK_CLAIMED_AT', date('Y-m-d H:i:s'), 'GLOBAL');
 
             // Provision/reuse credentials for the assigned user/team and inject into Lagoon.
-            $claimEnvironmentVariables = $this->provisionAndInjectAmazeeAiCredentialsForClaim($appInstance, $logContext);
+            $claimEnvironmentVariables = $this->provisionAndInjectManualAmazeeAiCredentials($appInstance, $logContext);
 
             if (! empty($claimScript)) {
                 $this->info('Claim script', $logContext);
@@ -102,14 +102,14 @@ trait ClaimAppInstanceTrait
             }
         } catch (\Exception $e) {
             $this->error($e->getMessage(), $logContext + [
-                'exception_class' => get_class($e),
+                'exception_class' => \get_class($e),
             ]);
             $appInstance->setStatus(PolydockAppInstanceStatus::POLYDOCK_CLAIM_FAILED, substr($e->getMessage(), 0, 100))->save();
 
             return $appInstance;
         }
 
-        $this->info($functionName.': completed', $logContext);
+        $this->info("{$functionName}: completed", $logContext);
         $appInstance->setStatus(PolydockAppInstanceStatus::POLYDOCK_CLAIM_COMPLETED, 'Claim completed')->save();
 
         return $appInstance;

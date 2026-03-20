@@ -18,7 +18,7 @@ trait PreCreateAppInstanceTrait
         $validateLagoonProjectName = true;
         $validateLagoonProjectId = false;
 
-        $this->info($functionName.': starting', $logContext);
+        $this->info("{$functionName}: starting", $logContext);
 
         $this->validateAppInstanceStatusIsExpectedAndConfigureLagoonClientAndVerifyLagoonValues(
             $appInstance,
@@ -31,7 +31,7 @@ trait PreCreateAppInstanceTrait
         );
 
         if ($this->getRequiresAiInfrastructure()) {
-            $this->setAmazeeAiBackendClientFromAppInstance($appInstance);
+            $this->provisionAndInjectManualAmazeeAiCredentials($appInstance, $logContext);
         }
 
         $projectName = $appInstance->getKeyValue('lagoon-project-name');
@@ -44,13 +44,13 @@ trait PreCreateAppInstanceTrait
             $appInstance->save();
         }
 
-        $this->info($functionName.': starting for project: '.$projectName, $logContext);
+        $this->info("{$functionName}: starting for project: {$projectName}", $logContext);
         $appInstance->setStatus(
             PolydockAppInstanceStatus::PRE_CREATE_RUNNING,
             PolydockAppInstanceStatus::PRE_CREATE_RUNNING->getStatusMessage()
         )->save();
 
-        $this->info($functionName.': completed', $logContext);
+        $this->info("{$functionName}: completed", $logContext);
         $appInstance->setStatus(PolydockAppInstanceStatus::PRE_CREATE_COMPLETED, 'Pre-create completed')->save();
 
         return $appInstance;
@@ -73,10 +73,7 @@ trait PreCreateAppInstanceTrait
         }
 
         return strtolower(
-            $prefix.'-'.
-            $this->pickAdjective().'-'.
-            $this->pickAnimal().'-'.
-            $shortUniqueId
+            "{$prefix}-{$this->pickAdjective()}-{$this->pickAnimal()}-{$shortUniqueId}"
         );
     }
 
