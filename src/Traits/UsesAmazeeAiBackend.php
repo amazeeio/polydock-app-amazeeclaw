@@ -72,7 +72,14 @@ trait UsesAmazeeAiBackend
     }
 
     /**
-     * @return array<string, string> Env vars safe to inline into claim script command
+     * Returns environment variables derived from stored AI credentials.
+     *
+     * These values may contain sensitive secrets (for example API keys, tokens, and
+     * database passwords) and MUST be treated as confidential. Callers MUST NOT
+     * inline these values directly into shell commands, logs, or any user-visible
+     * output, and should pass them only via secure environment mechanisms.
+     *
+     * @return array<string, string> Environment variables containing sensitive values
      */
     public function provisionAndInjectManualAmazeeAiCredentials(PolydockAppInstanceInterface $appInstance, array $logContext = []): array
     {
