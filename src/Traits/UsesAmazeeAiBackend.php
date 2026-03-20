@@ -49,12 +49,14 @@ trait UsesAmazeeAiBackend
 
         // Support nested structures if provided
         if (isset($data['ai']) && \is_array($data['ai'])) {
-            $secret['ai'] = [...($secret['ai'] ?? []), ...$data['ai']];
+            $existing = \is_array($secret['ai'] ?? null) ? $secret['ai'] : [];
+            $secret['ai'] = [...$existing, ...$data['ai']];
             $changed = true;
         }
 
         if (isset($data['vector']) && \is_array($data['vector'])) {
-            $secret['vector'] = [...($secret['vector'] ?? []), ...$data['vector']];
+            $existing = \is_array($secret['vector'] ?? null) ? $secret['vector'] : [];
+            $secret['vector'] = [...$existing, ...$data['vector']];
             $changed = true;
         }
 
@@ -122,17 +124,6 @@ trait UsesAmazeeAiBackend
             $val = $this->getDataFromPath($secret, $secretPath);
             if ($val !== null) {
                 $claimEnvVars[$envVar] = (string) $val;
-            }
-        }
-
-        // Also inject everything from secret as uppercase env vars if not already mapped
-        // We only do this for top-level scalar values to avoid messy env vars from nested objects
-        foreach ($secret as $key => $value) {
-            if (\is_scalar($value)) {
-                $envVar = strtoupper((string) $key);
-                if (! isset($claimEnvVars[$envVar])) {
-                    $claimEnvVars[$envVar] = (string) $value;
-                }
             }
         }
 
