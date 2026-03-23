@@ -9,9 +9,9 @@ trait UsesAmazeeAiBackend
     /**
      * Hook called when an app instance is being created.
      */
-    public function createAppInstance(PolydockAppInstanceInterface $appInstance, array $data = []): PolydockAppInstanceInterface
+    public function extractAiCredentialsFromHookData(PolydockAppInstanceInterface $appInstance, array $data = []): PolydockAppInstanceInterface
     {
-        $this->info('createAppInstance hook: extracting AI credentials', $this->getLogContext(__FUNCTION__));
+        $this->info('extractAiCredentialsFromHookData: extracting AI credentials', $this->getLogContext(__FUNCTION__));
         $this->extractAndStoreAiCredentialsFromHookData($appInstance, $data);
 
         return $appInstance;

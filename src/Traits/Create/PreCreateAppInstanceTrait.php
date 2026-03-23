@@ -30,6 +30,11 @@ trait PreCreateAppInstanceTrait
             $validateLagoonProjectId
         );
 
+        // Call the hook to extract AI credentials from the initial request data
+        if (method_exists($this, 'extractAiCredentialsFromHookData')) {
+            $this->extractAiCredentialsFromHookData($appInstance, $appInstance->config['request_data'] ?? []);
+        }
+
         $projectName = $appInstance->getKeyValue('lagoon-project-name');
         $projectPrefix = $appInstance->getKeyValue('lagoon-deploy-project-prefix');
         if ($projectPrefix !== '') {
