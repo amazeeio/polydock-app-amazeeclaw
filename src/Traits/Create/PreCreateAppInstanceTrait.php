@@ -30,10 +30,6 @@ trait PreCreateAppInstanceTrait
             $validateLagoonProjectId
         );
 
-        if ($this->getRequiresAiInfrastructure()) {
-            $this->provisionAndInjectManualAmazeeAiCredentials($appInstance, $logContext);
-        }
-
         $projectName = $appInstance->getKeyValue('lagoon-project-name');
         $projectPrefix = $appInstance->getKeyValue('lagoon-deploy-project-prefix');
         if ($projectPrefix !== '') {

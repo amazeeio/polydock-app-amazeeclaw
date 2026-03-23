@@ -80,6 +80,9 @@ trait PostCreateAppInstanceTrait
             }
 
             // AI credentials are user/team-scoped and are injected at claim-time.
+            if ($this->getRequiresAiInfrastructure()) {
+                $this->provisionAndInjectManualAmazeeAiCredentials($appInstance, $logContext);
+            }
         } catch (\Exception $e) {
             $this->error('Post Create Failed: '.$e->getMessage(), [
                 'exception_class' => \get_class($e),
