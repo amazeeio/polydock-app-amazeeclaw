@@ -4,7 +4,7 @@ namespace Amazeeio\PolydockAppAmazeeclaw\Traits;
 
 use FreedomtechHosting\PolydockApp\PolydockAppInstanceInterface;
 
-trait UsesAmazeeAiBackend
+trait UsesManualAmazeeAiCredentials
 {
     /**
      * Hook called when an app instance is being created.

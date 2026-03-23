@@ -7,7 +7,7 @@ namespace Amazeeio\PolydockAppAmazeeclaw;
 use Amazeeio\PolydockAppAmazeeclaw\Traits\Claim\ClaimAppInstanceTrait;
 use Amazeeio\PolydockAppAmazeeclaw\Traits\Create\PostCreateAppInstanceTrait;
 use Amazeeio\PolydockAppAmazeeclaw\Traits\Create\PreCreateAppInstanceTrait;
-use Amazeeio\PolydockAppAmazeeclaw\Traits\UsesAmazeeAiBackend;
+use Amazeeio\PolydockAppAmazeeclaw\Traits\UsesManualAmazeeAiCredentials;
 use Filament\Forms;
 use Filament\Infolists;
 use FreedomtechHosting\PolydockApp\Attributes\PolydockAppInstanceFields;
@@ -25,7 +25,7 @@ class PolydockAmazeeClawAiApp extends GenericPolydockAiApp implements HasAppInst
     use ClaimAppInstanceTrait;
     use PostCreateAppInstanceTrait;
     use PreCreateAppInstanceTrait;
-    use UsesAmazeeAiBackend;
+    use UsesManualAmazeeAiCredentials;
 
     public static string $version = '0.1.10';
 
