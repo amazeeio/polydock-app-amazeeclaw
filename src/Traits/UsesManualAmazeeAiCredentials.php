@@ -134,6 +134,9 @@ trait UsesManualAmazeeAiCredentials
 
         $this->info("{$functionName}: Injecting Manual AI LLM Credentials", $logContext);
         foreach ($claimEnvVars as $variableName => $variableValue) {
+            if ($variableValue === null || $variableValue === '') {
+                continue;
+            }
             $this->addOrUpdateLagoonProjectVariable($appInstance, $variableName, $variableValue, 'GLOBAL');
         }
         $this->info("{$functionName}: Done injecting manual AI infrastructure", $logContext);

@@ -37,8 +37,48 @@ trait PreCreateAppInstanceTrait
 
         $projectName = $appInstance->getKeyValue('lagoon-project-name');
         $projectPrefix = $appInstance->getKeyValue('lagoon-deploy-project-prefix');
+
+        $this->info("{$functionName}: Initial project name check", $logContext + ['projectName' => $projectName, 'projectPrefix' => $projectPrefix]);
+
+        // If a prefix is set, we always want to ensure the name follows the prefix-driven pattern
+        // BUT we should try to incorporate the requested name if it exists.
         if ($projectPrefix !== '') {
-            $projectName = $this->generateUniqueProjectName($projectPrefix);
+            $baseName = $projectName ?: $projectPrefix;
+            // Ensure baseName doesn't already start with prefix if we're prepending it
+            if ($projectName && ! str_starts_with($projectName, $projectPrefix)) {
+                $baseName = "{$projectPrefix}-{$projectName}";
+            }
+
+            // Sanitize base name: lowercase, alphanumeric and hyphens only
+            $baseName = strtolower((string) preg_replace('/[^a-z0-9-]+/', '-', $baseName));
+            $baseName = trim($baseName, '-');
+
+            // Check if this project name already exists on Lagoon
+            $finalProjectName = $baseName;
+            $attempts = 0;
+            $maxAttempts = 10;
+
+            while ($this->lagoonClient->projectExistsByName($finalProjectName) && $attempts < $maxAttempts) {
+                $this->info("{$functionName}: Project name {$finalProjectName} already exists on Lagoon, generating unique variant", $logContext);
+                $finalProjectName = $this->generateUniqueProjectName($baseName);
+                $attempts++;
+            }
+
+            if ($attempts >= $maxAttempts) {
+                $this->error("{$functionName}: Failed to generate a unique project name after {$maxAttempts} attempts", $logContext);
+                throw new \Exception("Failed to generate a unique project name for Lagoon");
+            }
+
+            $projectName = $finalProjectName;
+            $this->info("{$functionName}: Final unique project name: {$projectName}", $logContext);
+
+            /** @phpstan-ignore-next-line */
+            $appInstance->setName($projectName);
+            $appInstance->storeKeyValue('lagoon-project-name', $projectName);
+            $appInstance->save();
+        } elseif ($projectName === '') {
+            // No name and no prefix? This should probably not happen if validation passed, but let's be safe.
+            $projectName = $this->generateUniqueProjectName('polydock');
             /** @phpstan-ignore-next-line */
             $appInstance->setName($projectName);
             $appInstance->storeKeyValue('lagoon-project-name', $projectName);
