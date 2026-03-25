@@ -66,7 +66,7 @@ trait PreCreateAppInstanceTrait
 
             if ($attempts >= $maxAttempts) {
                 $this->error("{$functionName}: Failed to generate a unique project name after {$maxAttempts} attempts", $logContext);
-                throw new \Exception("Failed to generate a unique project name for Lagoon");
+                throw new \Exception('Failed to generate a unique project name for Lagoon');
             }
 
             $projectName = $finalProjectName;
